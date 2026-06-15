@@ -81,8 +81,8 @@ def _init_session_state() -> None:
             "location_pick": "Koramangala",
             "location_custom": "",
             "budget": "medium",
-            "cuisine_mode": "Pick a cuisine",
-            "cuisine_custom": "North Indian",
+            "cuisine_mode": PICK_CUISINE_MODE,
+            "cuisine_custom": "",
             "cuisine_pick": "North Indian",
             "min_rating": 3.5,
             "additional_preferences": "",
@@ -94,10 +94,75 @@ def _init_session_state() -> None:
             st.session_state[key] = value
 
 
+CUSTOM_CUISINE_MODE = "Enter custom cuisine"
+PICK_CUISINE_MODE = "Pick a cuisine"
+
+
 def _resolve_cuisine(mode: str, pick: str, custom: str) -> str:
-    if mode == "Enter custom cuisine":
+    if mode == CUSTOM_CUISINE_MODE:
         return custom
     return pick
+
+
+def _render_location_fields(
+    area_options: list[str],
+    defaults: dict[str, object],
+) -> tuple[str, str]:
+    default_pick = str(defaults["location_pick"])
+    if default_pick not in area_options:
+        default_pick = "Koramangala" if "Koramangala" in area_options else area_options[0]
+
+    location_pick = st.selectbox(
+        "Location (Area) in Bangalore",
+        options=area_options,
+        index=area_options.index(default_pick),
+        key="location_pick_input",
+    )
+    if location_pick == CUSTOM_AREA_OPTION:
+        location_custom = st.text_input(
+            "Custom area",
+            value=str(defaults["location_custom"]),
+            placeholder="e.g. Frazer Town, Sarjapur Road",
+            key="location_custom_input",
+        )
+    else:
+        location_custom = str(defaults["location_custom"])
+
+    return location_pick, location_custom
+
+
+def _render_cuisine_fields(
+    cuisines: list[str],
+    defaults: dict[str, object],
+) -> tuple[str, str, str]:
+    cuisine_mode = st.radio(
+        "Cuisine",
+        options=[PICK_CUISINE_MODE, CUSTOM_CUISINE_MODE],
+        horizontal=True,
+        index=0 if defaults["cuisine_mode"] == PICK_CUISINE_MODE else 1,
+        key="cuisine_mode_input",
+    )
+
+    if cuisine_mode == PICK_CUISINE_MODE:
+        options = cuisines or ["North Indian"]
+        default_pick = str(defaults["cuisine_pick"])
+        cuisine_pick = st.selectbox(
+            "Cuisine type",
+            options=options,
+            index=options.index(default_pick) if default_pick in options else 0,
+            key="cuisine_pick_input",
+        )
+        cuisine_custom = str(defaults["cuisine_custom"])
+    else:
+        cuisine_pick = str(defaults["cuisine_pick"])
+        cuisine_custom = st.text_input(
+            "Custom cuisine",
+            value=str(defaults["cuisine_custom"]),
+            placeholder="e.g. North Indian, Korean, Seafood",
+            key="cuisine_custom_input",
+        )
+
+    return cuisine_mode, cuisine_pick, cuisine_custom
 
 
 def render_preference_form() -> UserPreferences | None:
@@ -108,28 +173,18 @@ def render_preference_form() -> UserPreferences | None:
     cuisines = load_cuisine_suggestions()
     defaults = st.session_state.form_defaults
 
+    col1, col2 = st.columns(2)
+
+    with col1:
+        location_pick, location_custom = _render_location_fields(area_options, defaults)
+
+    with col2:
+        cuisine_mode, cuisine_pick, cuisine_custom = _render_cuisine_fields(cuisines, defaults)
+
     with st.form("preferences_form", clear_on_submit=False):
         col1, col2 = st.columns(2)
 
         with col1:
-            default_pick = defaults["location_pick"]
-            if default_pick not in area_options:
-                default_pick = "Koramangala" if "Koramangala" in area_options else area_options[0]
-
-            location_pick = st.selectbox(
-                "Location (Area) in Bangalore",
-                options=area_options,
-                index=area_options.index(default_pick),
-            )
-            if location_pick == CUSTOM_AREA_OPTION:
-                location_custom = st.text_input(
-                    "Custom area",
-                    value=defaults["location_custom"],
-                    placeholder="e.g. Frazer Town, Sarjapur Road",
-                )
-            else:
-                location_custom = defaults["location_custom"]
-
             budget = st.selectbox(
                 "Budget (for two)",
                 options=["low", "medium", "high"],
@@ -138,31 +193,6 @@ def render_preference_form() -> UserPreferences | None:
             )
 
         with col2:
-            cuisine_mode = st.radio(
-                "Cuisine",
-                options=["Pick a cuisine", "Enter custom cuisine"],
-                horizontal=True,
-                index=0 if defaults["cuisine_mode"] == "Pick a cuisine" else 1,
-            )
-            if cuisine_mode == "Pick a cuisine":
-                cuisine_pick = st.selectbox(
-                    "Cuisine type",
-                    options=cuisines or ["North Indian"],
-                    index=(cuisines or ["North Indian"]).index(defaults["cuisine_pick"])
-                    if defaults["cuisine_pick"] in (cuisines or ["North Indian"])
-                    else 0,
-                    label_visibility="collapsed",
-                )
-                cuisine_custom = defaults["cuisine_custom"]
-            else:
-                cuisine_pick = defaults["cuisine_pick"]
-                cuisine_custom = st.text_input(
-                    "Custom cuisine",
-                    value=defaults["cuisine_custom"],
-                    placeholder="e.g. North Indian",
-                    label_visibility="collapsed",
-                )
-
             min_rating = st.slider("Minimum rating", min_value=0.0, max_value=5.0, value=float(defaults["min_rating"]), step=0.5)
             top_k = st.number_input("Number of recommendations", min_value=1, max_value=20, value=int(defaults["top_k"]))
 
