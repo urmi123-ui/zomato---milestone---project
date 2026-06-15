@@ -186,7 +186,7 @@ The Vite dev server proxies `/api` to `http://127.0.0.1:8000`.
 python scripts/run_ui.py
 ```
 
-Deploy to [Streamlit Community Cloud](https://share.streamlit.io) using `src/app/ui/streamlit_app.py` as the main file. See [Deployment Plan](./docs/deployment-plan.md) for secrets, dataset packaging, and Docker.
+Deploy to [Streamlit Community Cloud](https://share.streamlit.io) using **`streamlit_app.py`** at the repo root as the main file. See [Deployment Plan](./docs/deployment-plan.md) for secrets, dataset packaging, and Docker.
 
 ## Run Tests
 

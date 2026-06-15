@@ -11,10 +11,8 @@ def apply_streamlit_secrets() -> None:
         return
 
     try:
-        secrets = st.secrets
+        for key, value in st.secrets.items():
+            if isinstance(value, (str, int, float, bool)):
+                os.environ.setdefault(str(key).upper(), str(value))
     except Exception:
         return
-
-    for key, value in secrets.items():
-        if isinstance(value, (str, int, float, bool)):
-            os.environ.setdefault(str(key).upper(), str(value))

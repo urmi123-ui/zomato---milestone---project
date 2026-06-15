@@ -4,7 +4,7 @@ Deploy the **Zomato AI Restaurant Recommendations** app using the legacy Streaml
 
 | Layer | Deploy target |
 |-------|----------------|
-| UI | Streamlit (`src/app/ui/streamlit_app.py`) |
+| UI | Streamlit (`streamlit_app.py` at repo root) |
 | Business logic | In-process orchestrator, filter, LLM pipeline |
 | Data | Local Parquet (`data/processed/restaurants.parquet`) |
 | LLM | Groq API (external) |
@@ -104,7 +104,6 @@ Create `.streamlit/config.toml` for consistent server behavior:
 ```toml
 [server]
 headless = true
-enableCORS = false
 enableXsrfProtection = true
 
 [browser]
@@ -115,7 +114,8 @@ gatherUsageStats = false
 
 | Setting | Value |
 |---------|-------|
-| Main module | `src/app/ui/streamlit_app.py` |
+| Main module (Streamlit Cloud) | `streamlit_app.py` |
+| App implementation | `src/app/ui/streamlit_app.py` |
 | Local launcher | `python scripts/run_ui.py` |
 
 Do **not** deploy the React frontend (`scripts/run_frontend.py`) or FastAPI backend (`scripts/run_backend.py`) for this plan—they are separate from the Streamlit path.
@@ -137,7 +137,7 @@ Use your deploy branch name if not `main`.
 1. Go to [share.streamlit.io](https://share.streamlit.io) and sign in with GitHub.
 2. Click **Create app**.
 3. Select the repository, branch, and main file path:
-   - **Main file path:** `src/app/ui/streamlit_app.py`
+   - **Main file path:** `streamlit_app.py`
 4. **App URL** — choose a subdomain (e.g. `zomato-ai-recs`).
 
 ### Step 3 — Configure secrets
@@ -184,7 +184,7 @@ The same Streamlit entry point works on any container or VM that can run Python.
 
 | Host | Approach |
 |------|----------|
-| **Docker** | `pip install -r requirements.txt && pip install -e .` then `streamlit run src/app/ui/streamlit_app.py --server.port=$PORT --server.address=0.0.0.0` |
+| **Docker** | `pip install -r requirements.txt && pip install -e .` then `streamlit run streamlit_app.py --server.port=$PORT --server.address=0.0.0.0` |
 | **Railway / Render / Fly.io** | Set start command above; inject env vars from dashboard |
 | **Local server / VM** | `python scripts/run_ui.py` behind nginx reverse proxy |
 
@@ -193,12 +193,12 @@ Example `Dockerfile` sketch:
 ```dockerfile
 FROM python:3.11-slim
 WORKDIR /app
-COPY requirements.txt pyproject.toml ./
+COPY requirements.txt pyproject.toml streamlit_app.py ./
 COPY src ./src
 COPY data/processed ./data/processed
 RUN pip install --no-cache-dir -r requirements.txt && pip install -e .
 EXPOSE 8501
-CMD ["streamlit", "run", "src/app/ui/streamlit_app.py", \
+CMD ["streamlit", "run", "streamlit_app.py", \
      "--server.headless=true", "--server.address=0.0.0.0", "--server.port=8501"]
 ```
 

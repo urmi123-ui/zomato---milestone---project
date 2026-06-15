@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-APP_PATH = ROOT / "src" / "app" / "ui" / "streamlit_app.py"
+APP_PATH = ROOT / "streamlit_app.py"
 SRC_PATH = ROOT / "src"
 
 
