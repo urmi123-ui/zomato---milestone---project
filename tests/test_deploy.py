@@ -96,3 +96,25 @@ class TestEnsureDataset:
 
         clear_settings_cache()
         os.environ.pop("DATA_PATH", None)
+
+
+class TestCorsSettings:
+    def test_default_cors_origins_include_local_dev(self) -> None:
+        clear_settings_cache()
+        settings = get_settings()
+        origins = settings.cors_origin_list
+        assert "http://localhost:5173" in origins
+        assert "http://127.0.0.1:8501" in origins
+
+    def test_cors_origins_parsed_from_env(self) -> None:
+        clear_settings_cache()
+        os.environ["CORS_ORIGINS"] = "https://app.vercel.app, http://localhost:3000"
+        try:
+            settings = get_settings()
+            assert settings.cors_origin_list == [
+                "https://app.vercel.app",
+                "http://localhost:3000",
+            ]
+        finally:
+            clear_settings_cache()
+            os.environ.pop("CORS_ORIGINS", None)

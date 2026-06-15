@@ -34,6 +34,14 @@ class Settings(BaseSettings):
     budget_low_max: float = Field(default=500.0, gt=0)
     budget_medium_max: float = Field(default=1500.0, gt=0)
 
+    cors_origins: str = (
+        "http://localhost:5173,"
+        "http://127.0.0.1:5173,"
+        "http://localhost:8501,"
+        "http://127.0.0.1:8501"
+    )
+    cors_origin_regex: str = ""
+
     @field_validator("data_path", mode="before")
     @classmethod
     def resolve_data_path(cls, value: str | Path) -> Path:
@@ -53,6 +61,10 @@ class Settings(BaseSettings):
         if not self.llm_api_key and self.groq_api_key:
             self.llm_api_key = self.groq_api_key
         return self
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
 
 @lru_cache

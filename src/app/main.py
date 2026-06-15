@@ -9,11 +9,14 @@ from fastapi.responses import JSONResponse
 
 from app.api.exceptions import error_response
 from app.api.routes import router
+from app.config import get_settings
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
+
+settings = get_settings()
 
 app = FastAPI(
     title="Zomato Restaurant Recommendations",
@@ -22,12 +25,8 @@ app = FastAPI(
 )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:8501",
-        "http://127.0.0.1:8501",
-    ],
+    allow_origins=settings.cors_origin_list,
+    allow_origin_regex=settings.cors_origin_regex or None,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
