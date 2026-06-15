@@ -10,13 +10,15 @@ This plan translates [context.md](./context.md) and [architecture.md](../archite
 
 From the architecture, keep these constraints in mind throughout every phase:
 
-| Principle | Implication |
-|-----------|-------------|
-| **Filter before generate** | Never call the LLM on the full dataset—filter deterministically first |
-| **Bounded context** | Cap candidates at 20–50 before prompt construction |
-| **Structured + generative** | Dataset fields are source of truth; LLM only ranks and explains |
-| **Grounding** | Recommendations must come from real dataset rows—no fabricated venues |
-| **Single-tenant MVP** | No auth, favorites, or order placement in initial scope |
+
+| Principle                   | Implication                                                           |
+| --------------------------- | --------------------------------------------------------------------- |
+| **Filter before generate**  | Never call the LLM on the full dataset—filter deterministically first |
+| **Bounded context**         | Cap candidates at 20–50 before prompt construction                    |
+| **Structured + generative** | Dataset fields are source of truth; LLM only ranks and explains       |
+| **Grounding**               | Recommendations must come from real dataset rows—no fabricated venues |
+| **Single-tenant MVP**       | No auth, favorites, or order placement in initial scope               |
+
 
 ---
 
@@ -32,17 +34,21 @@ flowchart LR
     P5 --> P6[Phase 6<br/>Testing & Polish]
 ```
 
-| Phase | Name | Outcome |
-|-------|------|---------|
-| 0 | Project Foundation | Runnable repo, config, domain models |
-| 1 | Data Ingestion & Storage | Processed Zomato dataset ready for queries |
-| 2 | Filter Layer | Deterministic candidate selection from preferences |
-| 3 | LLM Integration | Prompt, call, parse, merge pipeline |
-| 4 | Orchestrator & API | End-to-end recommendation use case wired |
-| 5 | Presentation Layer | User-facing form and results display |
-| 6 | Testing, Hardening & Docs | Reliable MVP ready to demo |
 
-**Recommended stack (rapid path):** Python 3.11+, Streamlit UI, in-process orchestrator, Parquet/in-memory store, OpenAI or Ollama.
+
+
+| Phase | Name                      | Outcome                                            |
+| ----- | ------------------------- | -------------------------------------------------- |
+| 0     | Project Foundation        | Runnable repo, config, domain models               |
+| 1     | Data Ingestion & Storage  | Processed Zomato dataset ready for queries         |
+| 2     | Filter Layer              | Deterministic candidate selection from preferences |
+| 3     | LLM Integration           | Prompt, call, parse, merge pipeline                |
+| 4     | Orchestrator & API        | End-to-end recommendation use case wired           |
+| 5     | Presentation Layer        | User-facing form and results display               |
+| 6     | Testing, Hardening & Docs | Reliable MVP ready to demo                         |
+
+
+**Recommended stack (rapid path):** Python 3.11+, Streamlit UI, in-process orchestrator, Parquet/in-memory store, **Groq** for LLM inference.
 
 ---
 
@@ -53,13 +59,13 @@ flowchart LR
 ### Prerequisites
 
 - Python 3.11+ installed
-- LLM provider account or local Ollama (can stub in Phase 3)
+- Groq API key ([https://console.groq.com](https://console.groq.com))
 
 ### Tasks
 
 - [ ] Scaffold repository per architecture layout
 - [ ] Add `requirements.txt` (`datasets`, `pandas`, `pydantic`, `pydantic-settings`, `python-dotenv`, UI framework)
-- [ ] Create `.env.example` with `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`, `DATA_PATH`, `MAX_CANDIDATES`, budget thresholds
+- [ ] Create `.env.example` with `LLM_PROVIDER=groq`, `LLM_API_KEY`, `LLM_MODEL`, `GROQ_BASE_URL`, `DATA_PATH`, `MAX_CANDIDATES`, budget thresholds
 - [ ] Implement `src/app/config.py` using pydantic-settings
 - [ ] Define domain models in `src/app/models/`:
   - `Restaurant` (id, name, location, cuisines, rating, estimated_cost, budget_band, metadata)
@@ -184,11 +190,11 @@ zomato-milestone/
 ### Prerequisites
 
 - Phase 2 complete
-- LLM API key configured (or Ollama running locally)
+- Groq API key configured (`LLM_API_KEY`)
 
 ### Tasks
 
-- [ ] Implement `LLMClient` interface with provider implementations (OpenAI, Ollama minimum)
+- [ ] Implement `LLMClient` interface with **GroqClient** (OpenAI-compatible chat completions API)
 - [ ] Implement `PromptBuilder.build(preferences, candidates)`:
   - System message: restaurant advisor role, grounding constraint (only recommend from provided list)
   - User context: serialized preferences including `additional_preferences`
@@ -221,16 +227,41 @@ zomato-milestone/
 
 ## Phase 4: Orchestrator & API Layer
 
-**Goal:** Wire the full recommendation pipeline behind a single use-case entry point and optional REST API.
+**Goal:** Wire the full recommendation pipeline behind a single use-case entry point and optional REST API. All LLM calls go through **Groq**.
 
 **Maps to context:** Full system workflow end-to-end (minus UI)
 
 ### Prerequisites
 
 - Phases 1–3 complete
+- Groq API key configured: [https://console.groq.com](https://console.groq.com)
+
+### LLM Provider (Phase 4)
+
+
+| Setting            | Value                                                                   |
+| ------------------ | ----------------------------------------------------------------------- |
+| **Provider**       | Groq only                                                               |
+| **API base**       | `https://api.groq.com/openai/v1` (OpenAI-compatible chat completions)   |
+| **Example models** | `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768` |
+| **Client**         | `GroqClient` in `llm_client.py`                                         |
+
+
+`create_llm_client()` returns `GroqClient`. The orchestrator has no provider-specific branching.
+
+**Example `.env`:**
+
+```bash
+LLM_PROVIDER=groq
+LLM_API_KEY=gsk_...
+LLM_MODEL=llama-3.3-70b-versatile
+GROQ_BASE_URL=https://api.groq.com/openai/v1
+```
 
 ### Tasks
 
+- [ ] Implement `GroqClient` using Groq's OpenAI-compatible `/chat/completions` endpoint
+- [ ] Wire `create_llm_client()` to return `GroqClient` (validate `LLM_PROVIDER=groq`)
 - [ ] Implement `RecommendRestaurantsUseCase` / `RecommendationOrchestrator.execute(preferences)`:
   1. Validate preferences
   2. Filter candidates
@@ -243,12 +274,13 @@ zomato-milestone/
   - **React path:** FastAPI with `POST /api/v1/recommendations`, `GET /api/v1/health`
 - [ ] Optional metadata endpoints: `GET /api/v1/metadata/locations`, `GET /api/v1/metadata/cuisines`
 - [ ] Standardize error responses: 400 validation, 502 LLM failure, 503 store not loaded
-- [ ] Add request logging: filter counts, LLM latency, parse success/failure, correlation id
-- [ ] Integration test: orchestrator with mocked LLM returning fixture JSON
+- [ ] Add request logging: filter counts, Groq model, LLM latency, parse success/failure, correlation id
+- [ ] Integration test: orchestrator with mocked LLM returning fixture JSON (provider-agnostic)
 
 ### Deliverables
 
 - `src/app/services/orchestrator.py`
+- `GroqClient` in `src/app/services/llm_client.py` (Phase 4)
 - API routes (if FastAPI path) or in-process wiring for Streamlit
 - Integration test with mocked LLM
 
@@ -257,7 +289,7 @@ zomato-milestone/
 - Single call to orchestrator produces full `RecommendationResponse` from real preferences
 - Empty candidate set skips LLM call and returns graceful empty response
 - API layer never calls LLM directly—only through orchestrator
-- End-to-end latency dominated by LLM; filter/parse stages under budget
+- End-to-end latency dominated by Groq LLM call; filter/parse stages under budget
 
 ---
 
@@ -322,14 +354,16 @@ zomato-milestone/
 ### Tasks
 
 - [ ] Complete test pyramid per architecture:
-  | Layer | Test type |
-  |-------|-----------|
-  | SchemaNormalizer | Unit |
-  | FilterService | Unit |
-  | PromptBuilder | Snapshot |
-  | ResponseParser | Unit (valid/invalid JSON) |
-  | Orchestrator | Integration (mocked LLM) |
-  | Full flow | E2E golden path with recorded LLM fixture |
+
+  | Layer            | Test type                                 |
+  | ---------------- | ----------------------------------------- |
+  | SchemaNormalizer | Unit                                      |
+  | FilterService    | Unit                                      |
+  | PromptBuilder    | Snapshot                                  |
+  | ResponseParser   | Unit (valid/invalid JSON)                 |
+  | Orchestrator     | Integration (mocked LLM)                  |
+  | Full flow        | E2E golden path with recorded LLM fixture |
+
 - [ ] Sanitize user input: max length on `additional_preferences`, trim strings
 - [ ] Verify no secrets in repo; document `.env` setup in README
 - [ ] Add health check if API deployed
@@ -357,12 +391,14 @@ zomato-milestone/
 
 ## Suggested Timeline
 
-| Week | Phases | Focus |
-|------|--------|-------|
-| 1 | 0, 1 | Repo setup, ingest pipeline, explore dataset schema |
-| 2 | 2, 3 | Filter service, LLM prompt/parse/merge, iterate on prompt quality |
-| 3 | 4, 5 | Orchestrator, Streamlit UI, wire end-to-end |
-| 4 | 6 | Tests, polish, README, demo prep |
+
+| Week | Phases | Focus                                                             |
+| ---- | ------ | ----------------------------------------------------------------- |
+| 1    | 0, 1   | Repo setup, ingest pipeline, explore dataset schema               |
+| 2    | 2, 3   | Filter service, LLM prompt/parse/merge, iterate on prompt quality |
+| 3    | 4, 5   | Orchestrator, Streamlit UI, wire end-to-end                       |
+| 4    | 6      | Tests, polish, README, demo prep                                  |
+
 
 Adjust pacing based on team size; Phases 2 and 3 can partially overlap once sample data exists.
 
@@ -372,15 +408,17 @@ Adjust pacing based on team size; Phases 2 and 3 can partially overlap once samp
 
 Use this as a quick gate before moving forward:
 
-| Gate | Question |
-|------|----------|
-| **After Phase 0** | Can you import and instantiate all domain models? |
-| **After Phase 1** | Can you load 100+ restaurants and query by location? |
-| **After Phase 2** | Does filter return ≤ 30 candidates matching test preferences? |
+
+| Gate              | Question                                                            |
+| ----------------- | ------------------------------------------------------------------- |
+| **After Phase 0** | Can you import and instantiate all domain models?                   |
+| **After Phase 1** | Can you load 100+ restaurants and query by location?                |
+| **After Phase 2** | Does filter return ≤ 30 candidates matching test preferences?       |
 | **After Phase 3** | Does a manual LLM call return valid JSON for a fixed candidate set? |
-| **After Phase 4** | Does orchestrator return a full response without UI? |
-| **After Phase 5** | Can a non-developer use the app to get recommendations? |
-| **After Phase 6** | Do tests pass and does the demo script work reliably? |
+| **After Phase 4** | Does orchestrator return a full response without UI?                |
+| **After Phase 5** | Can a non-developer use the app to get recommendations?             |
+| **After Phase 6** | Do tests pass and does the demo script work reliably?               |
+
 
 ---
 
@@ -399,16 +437,19 @@ Per architecture, do **not** build these in the initial milestone:
 
 ## Quick Reference: Component → Phase Mapping
 
-| Architecture Component | Phase |
-|------------------------|-------|
-| Data Ingestion Pipeline | 1 |
-| Restaurant Store & Repository | 1 |
-| User Input Module (models) | 0 |
-| User Input Module (UI) | 5 |
-| Filter Service | 2 |
-| Prompt Builder | 3 |
-| LLM Client + Response Parser | 3 |
-| Recommendation Orchestrator | 4 |
-| API Layer | 4 |
-| Presentation Layer | 5 |
-| Cross-cutting (config, logging, tests) | 0, 6 |
+
+| Architecture Component                 | Phase |
+| -------------------------------------- | ----- |
+| Data Ingestion Pipeline                | 1     |
+| Restaurant Store & Repository          | 1     |
+| User Input Module (models)             | 0     |
+| User Input Module (UI)                 | 5     |
+| Filter Service                         | 2     |
+| Prompt Builder                         | 3     |
+| LLM Client + Response Parser           | 3     |
+| Recommendation Orchestrator            | 4     |
+| API Layer                              | 4     |
+| Presentation Layer                     | 5     |
+| Cross-cutting (config, logging, tests) | 0, 6  |
+
+

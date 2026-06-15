@@ -12,18 +12,22 @@ logger = logging.getLogger(__name__)
 
 
 class LLMClient(ABC):
-    """Thin wrapper over hosted or local LLM providers."""
+    """Thin wrapper over the Groq hosted API."""
 
     @abstractmethod
     def complete(self, messages: list[dict[str, str]]) -> str:
         raise NotImplementedError
 
 
-class OpenAIClient(LLMClient):
+class GroqClient(LLMClient):
+    """Groq chat completions via OpenAI-compatible API."""
+
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
+        if settings.llm_provider != "groq":
+            raise ValueError("GroqClient requires LLM_PROVIDER=groq")
         if not settings.llm_api_key:
-            raise ValueError("LLM_API_KEY is required for OpenAI provider")
+            raise ValueError("LLM_API_KEY is required for Groq provider")
 
     def complete(self, messages: list[dict[str, str]]) -> str:
         payload = {
@@ -36,44 +40,21 @@ class OpenAIClient(LLMClient):
             "Authorization": f"Bearer {self.settings.llm_api_key}",
             "Content-Type": "application/json",
         }
+        url = f"{self.settings.groq_base_url.rstrip('/')}/chat/completions"
         return _post_with_retry(
-            url="https://api.openai.com/v1/chat/completions",
+            url=url,
             headers=headers,
             payload=payload,
             settings=self.settings,
-            extract_content=_extract_openai_content,
-        )
-
-
-class OllamaClient(LLMClient):
-    def __init__(self, settings: Settings) -> None:
-        self.settings = settings
-
-    def complete(self, messages: list[dict[str, str]]) -> str:
-        payload = {
-            "model": self.settings.llm_model,
-            "messages": messages,
-            "stream": False,
-            "format": "json",
-            "options": {"temperature": self.settings.llm_temperature},
-        }
-        url = f"{self.settings.ollama_base_url.rstrip('/')}/api/chat"
-        return _post_with_retry(
-            url=url,
-            headers={"Content-Type": "application/json"},
-            payload=payload,
-            settings=self.settings,
-            extract_content=_extract_ollama_content,
+            extract_content=_extract_chat_content,
         )
 
 
 def create_llm_client(settings: Settings | None = None) -> LLMClient:
     settings = settings or get_settings()
-    if settings.llm_provider == "openai":
-        return OpenAIClient(settings)
-    if settings.llm_provider == "ollama":
-        return OllamaClient(settings)
-    raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}")
+    if settings.llm_provider != "groq":
+        raise ValueError(f"Unsupported LLM provider: {settings.llm_provider}. Only 'groq' is supported.")
+    return GroqClient(settings)
 
 
 def _post_with_retry(
@@ -95,7 +76,7 @@ def _post_with_retry(
                 return extract_content(response.json())
         except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.RequestError) as exc:
             last_error = exc
-            logger.warning("LLM request failed (attempt %d/%d): %s", attempt + 1, attempts, exc)
+            logger.warning("Groq request failed (attempt %d/%d): %s", attempt + 1, attempts, exc)
             if attempt >= settings.llm_max_retries:
                 break
 
@@ -103,19 +84,12 @@ def _post_with_retry(
     raise LLMRequestError(str(last_error)) from last_error
 
 
-def _extract_openai_content(payload: dict[str, Any]) -> str:
+def _extract_chat_content(payload: dict[str, Any]) -> str:
     try:
         return payload["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
-        raise LLMRequestError("OpenAI response missing message content") from exc
-
-
-def _extract_ollama_content(payload: dict[str, Any]) -> str:
-    try:
-        return payload["message"]["content"]
-    except (KeyError, TypeError) as exc:
-        raise LLMRequestError("Ollama response missing message content") from exc
+        raise LLMRequestError("Groq response missing message content") from exc
 
 
 class LLMRequestError(Exception):
-    """Raised when the LLM provider request fails after retries."""
+    """Raised when the Groq provider request fails after retries."""

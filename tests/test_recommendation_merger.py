@@ -103,3 +103,52 @@ class TestRecommendationMerger:
         assert recommendations[0].restaurant.name == "Alpha"
         assert recommendations[0].rank == 1
         assert "budget" in recommendations[0].explanation.lower()
+
+    def test_merge_deduplicates_duplicate_names(self, preferences: UserPreferences) -> None:
+        candidates = [
+            Restaurant(
+                id="r1",
+                name="Onesta",
+                location="koramangala, bangalore",
+                cuisines=["north indian"],
+                rating=4.6,
+                budget_band="medium",
+            ),
+            Restaurant(
+                id="r2",
+                name="onesta",
+                location="koramangala 5th block, bangalore",
+                cuisines=["north indian"],
+                rating=4.2,
+                budget_band="medium",
+            ),
+            Restaurant(
+                id="r3",
+                name="Beta",
+                location="koramangala, bangalore",
+                cuisines=["north indian"],
+                rating=4.4,
+                budget_band="medium",
+            ),
+            Restaurant(
+                id="r4",
+                name="Gamma",
+                location="koramangala, bangalore",
+                cuisines=["north indian"],
+                rating=4.1,
+                budget_band="medium",
+            ),
+        ]
+        parsed = ParsedLLMResponse(
+            recommendations=[
+                LLMRecommendationItem(restaurant_id="r1", rank=1, explanation="First Onesta"),
+                LLMRecommendationItem(restaurant_id="r2", rank=2, explanation="Second Onesta"),
+                LLMRecommendationItem(restaurant_id="r3", rank=3, explanation="Beta"),
+            ]
+        )
+
+        _, recommendations = RecommendationMerger().merge(parsed, candidates, preferences)
+
+        names = [entry.restaurant.name.lower() for entry in recommendations]
+        assert len(names) == len(set(names))
+        assert names.count("onesta") == 1

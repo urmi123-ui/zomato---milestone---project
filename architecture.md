@@ -36,10 +36,11 @@ Filter before generate: Apply deterministic filters on structured data before ca
 Bounded context: Pass only a capped set of candidate restaurants into the prompt (e.g., top 20–50 after filtering).
 Structured + generative: Dataset fields are source of truth; LLM ranks and explains within that candidate set.
 Single-tenant MVP: No multi-user auth required for initial milestone; design should allow adding it later.
+LLM providers: **Groq only** for Phase 4+; fast inference via Groq's OpenAI-compatible API.
 Out of Scope (Initial Milestone)
 User accounts, saved favorites, or order placement
 Real-time restaurant availability or live Zomato API integration
-Fine-tuned custom models (use hosted LLM APIs)
+Fine-tuned custom models (use hosted Groq API)
 Geographic routing or map visualization (optional later)
 
 High-Level Architecture
@@ -256,7 +257,7 @@ Responsibility: Call LLM, handle retries, parse structured response, merge with 
 Sub-component
 Role
 LLMClient
-Thin wrapper over OpenAI / Anthropic / Ollama / etc.
+Thin wrapper over **Groq** hosted API (OpenAI-compatible chat completions)
 PromptTemplates
 Versioned templates for A/B and iteration
 ResponseParser
@@ -281,11 +282,11 @@ Steps:
   2. candidates = FilterService.filter(...)
   3. if candidates.empty: return empty response
   4. prompt = PromptBuilder.build(preferences, candidates)
-  5. raw = LLMClient.complete(prompt)
+  5. raw = GroqClient.complete(prompt)
   6. parsed = ResponseParser.parse(raw)
   7. results = Merger.merge(parsed, candidates)
   8. return RecommendationResponse(summary, results)
-This is the only component the API layer should call for the main flow.
+This is the only component the API layer should call for the main flow. All LLM calls use Groq; the orchestrator contains no provider-specific logic.
 
 8. Output / Presentation Layer
 Responsibility: Render RecommendationResponse for humans.
@@ -413,7 +414,15 @@ LLM Integration Architecture
 Provider Abstraction
 interface LLMClient:
   complete(messages: list[Message], options: CompletionOptions) -> str
-Implementations: OpenAIClient, AnthropicClient, OllamaClient for local dev.
+Implementations: **GroqClient** — fast inference via Groq's OpenAI-compatible API at `https://api.groq.com/openai/v1/chat/completions`.
+
+| Setting | Value |
+|---------|--------|
+| Provider | Groq |
+| Typical models | `llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `mixtral-8x7b-32768` |
+| Auth | `Authorization: Bearer $LLM_API_KEY` (Groq `gsk_…` key) |
+
+The orchestrator and parser are provider-agnostic; only `GroqClient` is wired for Phase 4.
 Prompting Principles
 Grounding: Explicitly list allowed restaurant_id values; instruct model not to add restaurants outside the list.
 Preference-aware ranking: Weight location and cuisine heavily; use additional_preferences for tie-breaking and tone.
@@ -506,11 +515,13 @@ Environment-driven settings:
 Variable
 Purpose
 LLM_PROVIDER
-openai / anthropic / ollama
+groq (fixed for Phase 4)
 LLM_API_KEY
-Provider secret
+Groq API secret (`gsk_…`)
 LLM_MODEL
-Model name
+Groq model name (e.g. `llama-3.3-70b-versatile`)
+GROQ_BASE_URL
+Optional override; default `https://api.groq.com/openai/v1`
 DATA_PATH
 Processed restaurant artifact path
 MAX_CANDIDATES
@@ -602,7 +613,7 @@ Storage
 In-memory / Parquet
 SQLite
 LLM
-OpenAI API or Ollama local
+Groq API
 Same
 Config
 pydantic-settings

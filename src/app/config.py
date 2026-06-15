@@ -6,22 +6,24 @@ from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+_ENV_FILE = PROJECT_ROOT / ".env"
 
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=PROJECT_ROOT / ".env",
+        env_file=_ENV_FILE if _ENV_FILE.is_file() else None,
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    llm_provider: Literal["openai", "anthropic", "ollama"] = "openai"
+    llm_provider: Literal["groq"] = "groq"
     llm_api_key: str = ""
-    llm_model: str = "gpt-4o-mini"
+    groq_api_key: str = ""
+    llm_model: str = "llama-3.3-70b-versatile"
     llm_temperature: float = Field(default=0.3, ge=0.0, le=1.0)
     llm_timeout_seconds: float = Field(default=30.0, gt=0)
     llm_max_retries: int = Field(default=1, ge=0, le=3)
-    ollama_base_url: str = "http://localhost:11434"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
     max_additional_preferences_length: int = Field(default=500, ge=50, le=2000)
 
     data_path: Path = Field(default=PROJECT_ROOT / "data/processed/restaurants.parquet")
@@ -46,7 +48,17 @@ class Settings(BaseSettings):
             raise ValueError("budget_low_max must be less than budget_medium_max")
         return self
 
+    @model_validator(mode="after")
+    def resolve_groq_api_key(self) -> "Settings":
+        if not self.llm_api_key and self.groq_api_key:
+            self.llm_api_key = self.groq_api_key
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def clear_settings_cache() -> None:
+    get_settings.cache_clear()

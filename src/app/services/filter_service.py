@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 
 from app.config import Settings, get_settings
+from app.data.dedup import deduplicate_restaurants_by_name
 from app.data.repository import RestaurantRepository
 from app.models.filter import FilterCriteria, FilterResult
 from app.models.preferences import UserPreferences
@@ -26,7 +27,8 @@ class FilterService:
         criteria = self._to_criteria(preferences)
         matched = repository.filter(criteria)
         total_before_cap = len(matched)
-        sorted_matches = sorted(matched, key=_candidate_sort_key)
+        deduped_matches = deduplicate_restaurants_by_name(matched)
+        sorted_matches = sorted(deduped_matches, key=_candidate_sort_key)
         max_candidates = self.settings.max_candidates
         candidates = sorted_matches[:max_candidates]
 

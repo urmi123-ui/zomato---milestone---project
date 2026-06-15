@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DineAI - States</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-dim": "#dcd9d9",
+                        "on-tertiary-container": "#fefcff",
+                        "on-error": "#ffffff",
+                        "surface": "#fcf9f8",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#bb162c",
+                        "outline": "#8f6f6e",
+                        "outline-variant": "#e4bebc",
+                        "inverse-surface": "#313030",
+                        "on-tertiary-fixed-variant": "#004494",
+                        "on-secondary-fixed-variant": "#5e4200",
+                        "inverse-on-surface": "#f3f0ef",
+                        "surface-container-low": "#f6f3f2",
+                        "secondary-fixed-dim": "#ffba20",
+                        "secondary-fixed": "#ffdea8",
+                        "on-primary-container": "#fffbff",
+                        "on-primary-fixed-variant": "#92001c",
+                        "secondary-container": "#feb700",
+                        "surface-container": "#f0eded",
+                        "tertiary-container": "#1470e8",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e5e2e1",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "surface-bright": "#fcf9f8",
+                        "tertiary-fixed": "#d8e2ff",
+                        "on-secondary-container": "#6b4b00",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#5b403f",
+                        "on-primary-fixed": "#410007",
+                        "on-error-container": "#93000a",
+                        "inverse-primary": "#ffb3b1",
+                        "background": "#fcf9f8",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#0058bd",
+                        "surface-variant": "#e5e2e1",
+                        "secondary": "#7c5800",
+                        "primary-container": "#db313f",
+                        "on-secondary-fixed": "#271900",
+                        "on-background": "#1b1b1b",
+                        "error-container": "#ffdad6",
+                        "surface-container-high": "#eae7e7",
+                        "on-tertiary-fixed": "#001a41",
+                        "primary-fixed": "#ffdad8",
+                        "primary": "#b7122a",
+                        "on-surface": "#1b1b1b",
+                        "primary-fixed-dim": "#ffb3b1"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    spacing: {
+                        gutter: "16px",
+                        "margin-desktop": "48px",
+                        unit: "4px",
+                        xs: "4px",
+                        sm: "8px",
+                        xl: "32px",
+                        lg: "24px",
+                        md: "16px",
+                        "margin-mobile": "16px"
+                    },
+                    fontFamily: {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "title-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "700" }],
+                        "headline-md": ["24px", { lineHeight: "32px", fontWeight: "700" }],
+                        "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+                        "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+                        "title-lg": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+                        "headline-lg-mobile": ["28px", { lineHeight: "34px", fontWeight: "700" }],
+                        "display-lg": ["40px", { lineHeight: "48px", letterSpacing: "-0.02em", fontWeight: "800" }]
+                    }
+                }
+            }
+        };
+    </script>
+<style>
+        .pulse-skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #b7122a;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        body {
+            background-color: #fafafa;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="font-body-md text-on-background min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 shadow-sm bg-surface">
+<div class="text-headline-md font-headline-md font-bold text-primary">DineAI</div>
+<div class="flex gap-4">
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 active:scale-90 p-2 rounded-full cursor-pointer" data-icon="location_on">location_on</span>
+<span class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 active:scale-90 p-2 rounded-full cursor-pointer" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<main class="pt-24 px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto space-y-16">
+<!-- AI Fallback Banner -->
+<div class="bg-tertiary-fixed text-on-tertiary-fixed p-4 rounded-lg flex items-center gap-3 shadow-sm mb-8">
+<span class="material-symbols-outlined text-tertiary">info</span>
+<p class="font-body-md">AI ranking was unavailable — showing top-rated matches from your filtered list.</p>
+</div>
+<!-- Section 1: Loading State -->
+<section class="space-y-8">
+<div class="text-center space-y-4 py-12">
+<div class="flex justify-center mb-6">
+<div class="spinner"></div>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Finding the best restaurants for you...</h2>
+<p class="font-body-md text-on-surface-variant">AI ranking may take a few seconds</p>
+</div>
+<!-- Skeleton Cards Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Skeleton Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-4 space-y-4">
+<div class="w-full h-48 bg-surface-container-highest rounded-lg pulse-skeleton"></div>
+<div class="h-6 bg-surface-container-highest rounded w-3/4 pulse-skeleton"></div>
+<div class="h-4 bg-surface-container-highest rounded w-1/2 pulse-skeleton"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+</div>
+</div>
+<!-- Skeleton Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-4 space-y-4">
+<div class="w-full h-48 bg-surface-container-highest rounded-lg pulse-skeleton"></div>
+<div class="h-6 bg-surface-container-highest rounded w-3/4 pulse-skeleton"></div>
+<div class="h-4 bg-surface-container-highest rounded w-1/2 pulse-skeleton"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+</div>
+</div>
+<!-- Skeleton Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden p-4 space-y-4 hidden lg:block">
+<div class="w-full h-48 bg-surface-container-highest rounded-lg pulse-skeleton"></div>
+<div class="h-6 bg-surface-container-highest rounded w-3/4 pulse-skeleton"></div>
+<div class="h-4 bg-surface-container-highest rounded w-1/2 pulse-skeleton"></div>
+<div class="flex gap-2 pt-2">
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+<div class="h-8 bg-surface-container-highest rounded-full w-16 pulse-skeleton"></div>
+</div>
+</div>
+</div>
+</section>
+<!-- Divider -->
+<hr class="border-outline-variant my-12"/>
+<!-- Section 2: Empty State -->
+<section class="flex flex-col items-center justify-center py-16 text-center bg-surface-container-lowest rounded-xl shadow-sm border border-surface-container-highest p-8">
+<div class="mb-6 w-48 h-48 rounded-full bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-6xl text-outline" style="font-size: 64px;">restaurant_menu</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">No restaurants matched your filters</h2>
+<p class="font-body-md text-on-surface-variant max-w-md mx-auto mb-8">Try a broader area, different cuisine, or lower minimum rating.</p>
+<button class="bg-primary text-on-primary font-label-md text-label-md px-6 py-3 rounded-full hover:bg-primary-container transition-colors shadow-sm">
+                Adjust preferences
+            </button>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center bg-surface px-4 py-3 border-t border-outline-variant shadow-lg rounded-t-xl">
+<a class="flex flex-col items-center justify-center bg-tertiary-container text-on-tertiary-container rounded-full px-4 py-1 scale-110 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+<span class="font-label-md text-label-md mt-1">Discover</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="bookmark">bookmark</span>
+<span class="font-label-md text-label-md mt-1">Saved</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md mt-1">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

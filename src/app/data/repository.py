@@ -107,6 +107,18 @@ class RestaurantRepository:
         )
         return cities
 
+    def distinct_areas(self) -> list[str]:
+        self.ensure_loaded()
+        assert self._restaurants is not None
+        areas = sorted(
+            {
+                restaurant.metadata.get("locality", "").strip()
+                for restaurant in self._restaurants
+                if restaurant.metadata.get("locality")
+            }
+        )
+        return areas
+
     def distinct_cuisines(self) -> list[str]:
         self.ensure_loaded()
         assert self._restaurants is not None
